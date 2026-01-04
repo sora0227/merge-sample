@@ -228,6 +228,7 @@
                                     <optgroup label="その他">    
                                         <option value="letter">Letter</option>    
                                         <option value="postcard">はがき</option>    
+                                        <option value="shareholder">株主優待用 (100 x 200 mm)</option>    
                                     </optgroup>    
                                 </select>    
                             </div>    
@@ -350,7 +351,8 @@
                 b4: { w: 257, h: 364 },    
                 b5: { w: 182, h: 257 },    
                 letter: { w: 215.9, h: 279.4 },    
-                postcard: { w: 100, h: 148 }    
+                postcard: { w: 100, h: 148 },    
+                shareholder: { w: 100, h: 200 }    
             },    
     
             init() {    
@@ -502,7 +504,8 @@
                         const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;    
                         const page = await pdf.getPage(1);    
                         // Increase scale for PDF to ensure better quality when rasterized    
-                        const viewport = page.getViewport({ scale: 3 });    
+                        // scale: 5 for higher quality background    
+                        const viewport = page.getViewport({ scale: 5 });    
                         const canvas = document.createElement('canvas');    
                         const ctx = canvas.getContext('2d');    
                         canvas.width = viewport.width;    
@@ -1054,8 +1057,8 @@
                 if (item.type === 'qr') {    
                     const w_px = (item.width / 100) * drawW;    
                     // Ensure QR size is high quality but not overkill    
-                    // 500px is enough for print QR usually    
-                    const size = Math.max(500, w_px * 2);     
+                    // 500px is enough for print QR usually -> Increased for high quality PDF    
+                    const size = Math.max(1000, w_px * 4);     
                     cvs.width = size;    
                     cvs.height = size;    
                         
@@ -1131,7 +1134,7 @@
                     };    
                 }    
             },    
-              
+                
             // Generate Master Template for Background    
             // Returns DataURL and Alias    
             async prepareMasterTemplate(s) {    
@@ -1170,7 +1173,8 @@
                 }    
                 ctx.putImageData(imageData, 0, 0);    
                     
-                return { data: cvs.toDataURL('image/jpeg', 0.95), alias: 'MASTER_TEMPLATE_CMYK', type: 'JPEG' };    
+                // Use higher quality for CMYK export (1.0)    
+                return { data: cvs.toDataURL('image/jpeg', 1.0), alias: 'MASTER_TEMPLATE_CMYK', type: 'JPEG' };    
             },    
     
             async generatePDF() {    
@@ -1235,7 +1239,8 @@
                 // BUT, to keep font sizes consistent with the Preview, we should assume the "Calculation Canvas"     
                 // had a specific resolution.    
                 // Let's assume the Export DPI (300) logic from renderPageToDOM.    
-                const exportDPI = 300; // Base    
+                // Increased DPI to 600 for sharper text rasterization in PDF    
+                const exportDPI = 600; // Base    
                 const mmToPx = (mm) => mm * (exportDPI / 25.4);    
                 const drawW_px_ref = mmToPx(drawW_mm);    
                     
